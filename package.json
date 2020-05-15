@@ -1,11 +1,11 @@
 {
-  "name": "cryptoship",
+  "name": "bettingsmall",
   "version": "0.0.0-semantically-released",
   "description": "",
   "scripts": {
     "test": "jest --runInBand",
     "compile": "make -C build",
-    "compile_eosio": "eosio-cpp contract/cryptoship.cpp -o contract/cryptoship.wasm --abigen --contract=cryptoship",
+    "compile_eosio": "eosio-cpp contract/bettingsmall.cpp -o contract/bettingsmall.wasm --abigen --contract=bettingsmall",
     "deploy": "npm run compile && node scripts/deploy.js",
     "init": "node scripts/init.js",
     "create_actions": "node scripts/create_actions/index.js",

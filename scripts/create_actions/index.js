@@ -41,7 +41,7 @@ async function script() {
         const compile = ejs.compile(actionTemplate)
 
         const abi = JSON.parse(
-            fs.readFileSync(path.join(contractDir, `cryptoship.abi`)),
+            fs.readFileSync(path.join(contractDir, `bettingsmall.abi`)),
             `utf8`,
         )
 

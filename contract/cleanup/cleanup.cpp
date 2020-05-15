@@ -1,5 +1,5 @@
 #include <eosio/transaction.hpp>
-#include "../cryptoship.hpp"
+#include "../bettingsmall.hpp"
 #include "../utils/utils.hpp"
 
 using namespace eosio;
@@ -15,7 +15,7 @@ struct cleanup_s {};
 // Its purpose is to "advance" games that are expired
 // for instance by setting expired running games to game over
 // or deleting finished games after their expiry date
-void cryptoship::cleanup() {
+void bettingsmall::cleanup() {
   // anyone can call this action, no auth required
 
   auto games_by_expiry = games.get_index<"expiresat"_n>();

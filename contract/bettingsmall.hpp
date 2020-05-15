@@ -17,9 +17,9 @@ static const eosio::microseconds EXPIRE_OPEN = eosio::days(7);
 static const eosio::microseconds EXPIRE_TURN = eosio::days(1);
 static const eosio::microseconds EXPIRE_GAME_OVER = eosio::days(3);
 
-CONTRACT cryptoship : public eosio::contract {
+CONTRACT bettingsmall : public eosio::contract {
  public:
-  cryptoship(eosio::name receiver, eosio::name code,
+  bettingsmall(eosio::name receiver, eosio::name code,
              eosio::datastream<const char *> ds)
       : contract(receiver, code, ds), games(receiver, receiver.value) {}
 

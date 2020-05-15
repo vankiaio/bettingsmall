@@ -1,4 +1,4 @@
-# cryptoship
+# bettingsmall
 
 A battleship like game on the EOS blockchain.
 

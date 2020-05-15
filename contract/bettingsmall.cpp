@@ -1,4 +1,4 @@
-#include "./cryptoship.hpp"
+#include "./bettingsmall.hpp"
 
 // https://eosio.stackexchange.com/a/1349/118
 #include "./cleanup/cleanup.cpp"
@@ -9,7 +9,7 @@ using namespace eosio;
 using namespace std;
 
 // create just "opens" the game by allocating and paying for RAM
-void cryptoship::create(name player, uint32_t nonce, const asset quantity,
+void bettingsmall::create(name player, uint32_t nonce, const asset quantity,
                         const eosio::checksum256 &commitment) {
   require_auth(player);
   // any step between 0.1 and 100 EOS
@@ -34,7 +34,7 @@ void cryptoship::create(name player, uint32_t nonce, const asset quantity,
   });
 }
 
-void cryptoship::join(eosio::name player, uint32_t nonce, uint64_t game_id,
+void bettingsmall::join(eosio::name player, uint32_t nonce, uint64_t game_id,
                       const eosio::checksum256 &commitment) {
   require_auth(player);
 
@@ -52,7 +52,7 @@ void cryptoship::join(eosio::name player, uint32_t nonce, uint64_t game_id,
   });
 }
 
-void cryptoship::p1_deposit(name player, const asset &quantity) {
+void bettingsmall::p1_deposit(name player, const asset &quantity) {
   require_auth(player);
   // this action should be called in a transaction after the "create" action
   // only then we can guarantee that the last created game is the opened game
@@ -73,7 +73,7 @@ void cryptoship::p1_deposit(name player, const asset &quantity) {
   });
 }
 
-void cryptoship::p2_deposit(name player, uint64_t game_id,
+void bettingsmall::p2_deposit(name player, uint64_t game_id,
                             const asset &quantity) {
   require_auth(player);
 
@@ -94,7 +94,7 @@ void cryptoship::p2_deposit(name player, uint64_t game_id,
   });
 }
 
-void cryptoship::transfer(name from, name to, const asset &quantity,
+void bettingsmall::transfer(name from, name to, const asset &quantity,
                           string memo) {
   if (from == _self) {
     // we're sending money, do nothing additional
@@ -114,7 +114,7 @@ void cryptoship::transfer(name from, name to, const asset &quantity,
   }
 }
 
-void cryptoship::attack(uint64_t game_id, eosio::name player,
+void bettingsmall::attack(uint64_t game_id, eosio::name player,
                         const std::vector<uint8_t> &attacks) {
   require_auth(player);
   auto game_itr = get_game(game_id);
@@ -129,7 +129,7 @@ void cryptoship::attack(uint64_t game_id, eosio::name player,
   });
 }
 
-void cryptoship::reveal(uint64_t game_id, eosio::name player,
+void bettingsmall::reveal(uint64_t game_id, eosio::name player,
                         const std::vector<uint8_t> &attack_responses) {
   require_auth(player);
   auto game_itr = get_game(game_id);
@@ -144,7 +144,7 @@ void cryptoship::reveal(uint64_t game_id, eosio::name player,
   });
 }
 
-void cryptoship::decommit(uint64_t game_id, eosio::name player,
+void bettingsmall::decommit(uint64_t game_id, eosio::name player,
                           const eosio::checksum256 &decommitment) {
   require_auth(player);
   auto game_itr = get_game(game_id);
@@ -201,7 +201,7 @@ void cryptoship::decommit(uint64_t game_id, eosio::name player,
   }
 }
 
-void cryptoship::claim(uint64_t game_id, eosio::name player) {
+void bettingsmall::claim(uint64_t game_id, eosio::name player) {
   auto game_itr = get_game(game_id);
   assert_player_in_game(*game_itr, player);
 
@@ -228,7 +228,7 @@ void cryptoship::claim(uint64_t game_id, eosio::name player) {
 }
 
 #ifndef PRODUCTION
-void cryptoship::testreset(uint16_t max_games) {
+void bettingsmall::testreset(uint16_t max_games) {
   require_auth(_self);
   uint16_t count = 0;
   max_games = max_games == 0 ? -1 : max_games;

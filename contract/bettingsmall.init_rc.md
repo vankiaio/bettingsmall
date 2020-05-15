@@ -1,4 +1,4 @@
-# CONTRACT FOR cryptoship::init
+# CONTRACT FOR bettingsmall::init
 
 ## ACTION NAME: init
 

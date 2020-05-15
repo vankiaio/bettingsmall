@@ -1,4 +1,4 @@
-// #include "../cryptoship.hpp"
+// #include "../bettingsmall.hpp"
 #include "./fsm.hpp"
 
 using namespace fsm;
