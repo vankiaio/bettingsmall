@@ -9,9 +9,9 @@ using namespace eosio;
 using namespace std;
 
 // create just "opens" the game by allocating and paying for RAM
-void bettingsmall::create(name player, uint32_t nonce, const asset quantity,
+void bettingsmall::create(name creator, uint32_t nonce, const asset quantity,
                         const eosio::checksum256 &commitment) {
-  require_auth(player);
+  require_auth(creator);
   // any step between 0.1 and 100 EOS
   eosio::check(quantity.symbol == EOS_SYMBOL, "only EOS tokens allowed");
   eosio::check(quantity.amount == 1E3 || quantity.amount == 1E4 ||
@@ -20,15 +20,15 @@ void bettingsmall::create(name player, uint32_t nonce, const asset quantity,
 
   fsm::automaton machine(commitment);
 
-  // make player pay for RAM
-  games.emplace(player, [&](game &g) {
+  // make creator pay for RAM
+  games.emplace(creator, [&](game &g) {
     // auto-increment key
     g.id = games.available_primary_key();
-    g.player1 = player;
-    g.player1_nonce = nonce;
-    g.player1_can_claim = false;
-    g.player2_can_claim = false;
-    g.bet_amount_per_player = quantity;
+    g.creator = creator;
+    g.creator_nonce = nonce;
+    g.team1_can_claim = false;
+    g.team2_can_claim = false;
+    // g.bet_amount_per_team = quantity;
     g.expires_at = eosio::current_time_point() + EXPIRE_OPEN;
     g.game_data = machine.data;
   });
@@ -39,57 +39,77 @@ void bettingsmall::join(eosio::name player, uint32_t nonce, uint64_t game_id,
   require_auth(player);
 
   auto game_itr = get_game(game_id);
-  eosio::check(game_itr->player2 == player,
-               "deposit of another player already exists");
+  eosio::check(game_itr->creator == player,
+               "deposit of another team already exists");
 
   fsm::automaton machine(game_itr->game_data);
   machine.join(commitment);
 
-  games.modify(game_itr, game_itr->player1, [&](auto &g) {
-    g.expires_at = eosio::current_time_point() + EXPIRE_TURN;
-    g.player2_nonce = nonce;
+  games.modify(game_itr, game_itr->creator, [&](auto &g) {
+    // g.expires_at = eosio::current_time_point() + EXPIRE_TURN;
+    // g.team2_nonce = nonce;
     g.game_data = machine.data;
   });
 }
 
-void bettingsmall::p1_deposit(name player, const asset &quantity) {
-  require_auth(player);
+void bettingsmall::p1_deposit(name team1player, uint64_t game_id,
+                      const asset &quantity) {
+  require_auth(team1player);
   // this action should be called in a transaction after the "create" action
   // only then we can guarantee that the last created game is the opened game
-  auto latest_game = games.end();
-  latest_game--;
+  auto game_itr = get_game(game_id);
 
-  eosio::check(latest_game != games.end(), "must create a game first");
-  eosio::check(latest_game->player1 == player, "must pay for your own game");
-  eosio::check(latest_game->bet_amount_per_player == quantity,
-               "game has a different bet amount or token");
+  eosio::check(game_itr != games.end(), "must create a game first");
+  eosio::check(game_itr->creator != team1player, "cannot join for your own game");
+  eosio::check(quantity.amount > 0, "only positive quantity allowed");
 
-  fsm::automaton machine(latest_game->game_data);
+  fsm::automaton machine(game_itr->game_data);
   machine.p1_deposit();
 
-  games.modify(latest_game, player, [&](game &g) {
-    g.expires_at = eosio::current_time_point() + EXPIRE_OPEN;
+  games.modify(game_itr, game_itr->creator, [&](game &g) {
+
+    // join new player for one team
+    g.team1players.reserve(g.team1players.size()+1);
+    player p1;
+    p1.id = g.team1players.size()+1;
+    p1.account = team1player;
+    p1.player_can_claim = false;
+    p1.bet_amount_per_player = quantity;
+
+    g.team1players.emplace_back(p1);
+
+    // g.expires_at = eosio::current_time_point() + EXPIRE_OPEN;
     g.game_data = machine.data;
   });
 }
 
-void bettingsmall::p2_deposit(name player, uint64_t game_id,
-                            const asset &quantity) {
-  require_auth(player);
-
+void bettingsmall::p2_deposit(name team2player, uint64_t game_id,
+                      const asset &quantity) {
+  require_auth(team2player);
+  // this action should be called in a transaction after the "create" action
+  // only then we can guarantee that the last created game is the opened game
   auto game_itr = get_game(game_id);
-  eosio::check(game_itr->bet_amount_per_player == quantity,
-               "game has a different bet amount");
-  eosio::check(game_itr->player1 != player, "cannot join your own game");
+
+  eosio::check(game_itr != games.end(), "must create a game first");
+  eosio::check(game_itr->creator != team2player, "cannot join for your own game");
+  eosio::check(quantity.amount > 0, "only positive quantity allowed");
 
   fsm::automaton machine(game_itr->game_data);
   machine.p2_deposit();
 
-  // cannot make second player pay for updates as this is in a require_recipient
-  // call from transfer
-  games.modify(game_itr, game_itr->player1, [&](auto &g) {
-    g.player2 = player;
-    g.expires_at = eosio::current_time_point() + EXPIRE_OPEN;
+  games.modify(game_itr, game_itr->creator, [&](game &g) {
+
+    // join new player for one team
+    g.team2players.reserve(g.team2players.size()+1);
+    player p2;
+    p2.id = g.team2players.size()+1;
+    p2.account = team2player;
+    p2.player_can_claim = false;
+    p2.bet_amount_per_player = quantity;
+
+    g.team2players.emplace_back(p2);
+
+    // g.expires_at = eosio::current_time_point() + EXPIRE_OPEN;
     g.game_data = machine.data;
   });
 }
@@ -106,10 +126,10 @@ void bettingsmall::transfer(name from, name to, const asset &quantity,
   eosio::check(quantity.amount > 0, "only positive quantity allowed");
   eosio::check(quantity.symbol == EOS_SYMBOL, "only EOS tokens allowed");
 
-  if (memo == "create") {
-    p1_deposit(from, quantity);
-  } else {
-    uint64_t game_id = std::stoull(memo);
+  uint64_t game_id = std::stoull(memo);
+  if (to == "bettingteam1"_n) {
+    p1_deposit(from, game_id, quantity);
+  } if (to == "bettingteam2"_n) {
     p2_deposit(from, game_id, quantity);
   }
 }
@@ -121,24 +141,24 @@ void bettingsmall::attack(uint64_t game_id, eosio::name player,
   assert_player_in_game(*game_itr, player);
 
   fsm::automaton machine(game_itr->game_data);
-  machine.attack(player == game_itr->player1, attacks);
+  machine.attack(player == game_itr->creator, attacks);
 
-  games.modify(game_itr, game_itr->player1, [&](auto &g) {
+  games.modify(game_itr, game_itr->creator, [&](auto &g) {
     g.expires_at = eosio::current_time_point() + EXPIRE_TURN;
     g.game_data = machine.data;
   });
 }
 
-void bettingsmall::reveal(uint64_t game_id, eosio::name player,
+void bettingsmall::reveal(uint64_t game_id, eosio::name team,
                         const std::vector<uint8_t> &attack_responses) {
-  require_auth(player);
+  require_auth(team);
   auto game_itr = get_game(game_id);
-  assert_player_in_game(*game_itr, player);
+  assert_player_in_game(*game_itr, team);
 
   fsm::automaton machine(game_itr->game_data);
-  machine.reveal(player == game_itr->player1, attack_responses);
+  machine.reveal(team == game_itr->creator, attack_responses);
 
-  games.modify(game_itr, game_itr->player1, [&](auto &g) {
+  games.modify(game_itr, game_itr->creator, [&](auto &g) {
     g.expires_at = eosio::current_time_point() + EXPIRE_TURN;
     g.game_data = machine.data;
   });
@@ -150,48 +170,55 @@ void bettingsmall::decommit(uint64_t game_id, eosio::name player,
   auto game_itr = get_game(game_id);
   assert_player_in_game(*game_itr, player);
 
-  bool is_player1 = player == game_itr->player1;
+  bool is_creator = player == game_itr->creator;
   fsm::automaton machine(game_itr->game_data);
-  machine.decommit(is_player1, decommitment);
+  machine.decommit(is_creator, decommitment);
 
-  games.modify(game_itr, game_itr->player1, [&](auto &g) {
-    // player1 decommits means that the game is over and a winner was determined
+  games.modify(game_itr, game_itr->creator, [&](auto &g) {
+    // team1 decommits means that the game is over and a winner was determined
     g.expires_at =
-        eosio::current_time_point() + (is_player1 ? EXPIRE_GAME_OVER : EXPIRE_TURN);
+        eosio::current_time_point() + (is_creator ? EXPIRE_GAME_OVER : EXPIRE_TURN);
     g.game_data = machine.data;
   });
 
-  // player1 decommits means that the game is over and a winner was determined
-  if (is_player1) {
+  // team1 decommits means that the game is over and a winner was determined
+  if (is_creator) {
     switch (machine.get_winner()) {
       case P1_WIN: {
-        action(permission_level{_self, "active"_n}, "eosio.token"_n,
-               "transfer"_n,
-               make_tuple(_self, game_itr->player1,
-                          game_itr->bet_amount_per_player * 2,
-                          std::to_string(game_itr->id)))
-            .send();
+        for (auto player_itr = game_itr->team1players.begin(); player_itr != game_itr->team1players.end(); ++player_itr) {
+          action(permission_level{_self, "active"_n}, "eosio.token"_n,
+                "transfer"_n,
+                make_tuple(_self, game_itr->creator,
+                            player_itr->bet_amount_per_player * 2,
+                            std::to_string(game_itr->id)))
+              .send();
+        }
         break;
       }
       case P2_WIN: {
-        action(permission_level{_self, "active"_n}, "eosio.token"_n,
-               "transfer"_n,
-               make_tuple(_self, game_itr->player2,
-                          game_itr->bet_amount_per_player * 2,
-                          std::to_string(game_itr->id)))
-            .send();
-        break;
+        for (auto player_itr = game_itr->team2players.begin(); player_itr != game_itr->team2players.end(); ++player_itr) {
+          action(permission_level{_self, "active"_n}, "eosio.token"_n,
+                "transfer"_n,
+                make_tuple(_self, game_itr->creator,
+                            player_itr->bet_amount_per_player * 2,
+                            std::to_string(game_itr->id)))
+              .send();
+        }
       }
       case DRAW: {
         game_itr = get_game(game_id);
-        games.modify(game_itr, game_itr->player1, [&](auto &g) {
-          g.player1_can_claim = true;
-          g.player2_can_claim = true;
+        games.modify(game_itr, game_itr->creator, [&](auto &g) {
+          g.team1_can_claim = true;
+          g.team2_can_claim = true;
         });
         // send deferred because P2 has incentive to block transfers
         // as he gets 2*stake if this action fails
-        claim_deferred(_self, game_itr->id, game_itr->player1);
-        claim_deferred(_self, game_itr->id, game_itr->player2);
+        for (auto player_itr = game_itr->team1players.begin(); player_itr != game_itr->team1players.end(); ++player_itr) {
+          claim_deferred(_self, game_itr->id, *player_itr);
+        }
+        for (auto player_itr = game_itr->team2players.begin(); player_itr != game_itr->team2players.end(); ++player_itr) {
+          claim_deferred(_self, game_itr->id, *player_itr);
+        }
         break;
       }
       default: {
@@ -201,28 +228,28 @@ void bettingsmall::decommit(uint64_t game_id, eosio::name player,
   }
 }
 
-void bettingsmall::claim(uint64_t game_id, eosio::name player) {
+void bettingsmall::claim(uint64_t game_id, const player &player) {
   auto game_itr = get_game(game_id);
-  assert_player_in_game(*game_itr, player);
+  assert_player_in_game(*game_itr, player.account);
 
-  bool is_player1 = player == game_itr->player1;
+  bool is_creator = player.account == game_itr->creator;
   bool can_claim =
-      is_player1 ? game_itr->player1_can_claim : game_itr->player2_can_claim;
+      is_creator ? game_itr->team1_can_claim : game_itr->team2_can_claim;
   eosio::check(can_claim, "not allowed to claim");
 
   fsm::automaton machine(game_itr->game_data);
   auto multiplier = machine.get_payout_multiplier();
 
-  games.modify(game_itr, game_itr->player1, [&](auto &g) {
-    if (is_player1) {
-      g.player1_can_claim = false;
+  games.modify(game_itr, game_itr->creator, [&](auto &g) {
+    if (is_creator) {
+      g.team1_can_claim = false;
     } else {
-      g.player2_can_claim = false;
+      g.team2_can_claim = false;
     }
   });
 
   action(permission_level{_self, "active"_n}, "eosio.token"_n, "transfer"_n,
-         make_tuple(_self, player, game_itr->bet_amount_per_player * multiplier,
+         make_tuple(_self, player.account, player.bet_amount_per_player * multiplier,
                     std::to_string(game_itr->id)))
       .send();
 }

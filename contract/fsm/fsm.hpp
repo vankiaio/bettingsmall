@@ -12,11 +12,14 @@ namespace fsm {
 // finite state machine states
 enum state : uint8_t {
   // running game states
-  P1_REVEALED,
-  P1_ATTACKED,
-  P2_REVEALED,
-  P2_ATTACKED,
-  P2_VERIFIED,
+  // P1_REVEALED,
+  // P1_ATTACKED,
+  // P2_REVEALED,
+  // P2_ATTACKED,
+  // P2_VERIFIED,
+  WHITE_BOX_PERIOD,
+  BLACK_BOX_PERIOD,
+  REVEALED_PERIOD,
 
   // game over game states
   CREATED,
@@ -34,16 +37,27 @@ enum state : uint8_t {
 
 struct game_data {
   // default constructor needed for multi_index default initialization
-  game_data() : board1(), board2(), state(CREATED) {}
+  game_data() : state(CREATED) {}
   game_data(const eosio::checksum256 &commitment)
-      : board1(commitment), board2(), state(CREATED) {}
+      : state(CREATED) {}
   // is used as state struct, but cannot be serialized by EOS
   uint8_t state;
-  logic::board board1;
-  logic::board board2;
 
-  EOSLIB_SERIALIZE(game_data, (state)(board1)(board2))
+  EOSLIB_SERIALIZE(game_data, (state))
 };
+
+// struct game_data {
+//   // default constructor needed for multi_index default initialization
+//   game_data() : board1(), board2(), state(CREATED) {}
+//   game_data(const eosio::checksum256 &commitment)
+//       : board1(commitment), board2(), state(CREATED) {}
+//   // is used as state struct, but cannot be serialized by EOS
+//   uint8_t state;
+//   logic::board board1;
+//   logic::board board2;
+
+//   EOSLIB_SERIALIZE(game_data, (state)(board1)(board2))
+// };
 
 class automaton {
  public:
@@ -92,23 +106,21 @@ class automaton {
 
       // all states where it's P2's turn
       case ALL_DEPOSITED:
-      case P2_REVEALED:
-      case P1_REVEALED: {
+      case REVEALED_PERIOD: {
         data.state = P1_WIN_EXPIRED;
         *p1_can_claim = true;
         *p2_can_claim = false;
         break;
       }
 
-      // all states where it's P1's turn
-      case P2_ATTACKED:
-      case P1_ATTACKED:
-      case P2_VERIFIED: {
-        data.state = P2_WIN_EXPIRED;
-        *p1_can_claim = false;
-        *p2_can_claim = true;
-        break;
-      }
+      // // all states where it's P1's turn
+      // case ALL_DEPOSITED:
+      // case REVEALED_PERIOD : {
+      //   data.state = P2_WIN_EXPIRED;
+      //   *p1_can_claim = false;
+      //   *p2_can_claim = true;
+      //   break;
+      // }
 
       // all other states are already end states
       default: {

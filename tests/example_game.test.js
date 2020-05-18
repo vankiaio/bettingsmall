@@ -55,7 +55,7 @@ describe(`contract`, () => {
                     name: `create`,
                     actor: `test1`,
                     data: {
-                        player: `test1`,
+                        team: `test1`,
                         nonce: 0,
                         quantity: `0.1000 EOS`,
                         commitment: p1Commitment,
@@ -90,7 +90,7 @@ describe(`contract`, () => {
                     name: `join`,
                     actor: `test2`,
                     data: {
-                        player: `test2`,
+                        team: `test2`,
                         nonce: 0,
                         game_id: gameId,
                         commitment: p2Commitment,
@@ -104,7 +104,7 @@ describe(`contract`, () => {
                     name: `attack`,
                     actor: `test2`,
                     data: {
-                        player: `test2`,
+                        team: `test2`,
                         game_id: gameId,
                         attacks: [0, 1, 2, 3],
                     },
@@ -115,7 +115,7 @@ describe(`contract`, () => {
                     name: `attack`,
                     actor: `test1`,
                     data: {
-                        player: `test1`,
+                        team: `test1`,
                         game_id: gameId,
                         attacks: [21, 22, 23, 24],
                     },
@@ -124,7 +124,7 @@ describe(`contract`, () => {
                     name: `reveal`,
                     actor: `test1`,
                     data: {
-                        player: `test1`,
+                        team: `test1`,
                         game_id: gameId,
                         attack_responses: [2, 2, 3, 4],
                     },
@@ -137,7 +137,7 @@ describe(`contract`, () => {
                     name: `reveal`,
                     actor: `test2`,
                     data: {
-                        player: `test2`,
+                        team: `test2`,
                         game_id: gameId,
                         attack_responses: [3, 2, 2, 2],
                     },
@@ -146,7 +146,7 @@ describe(`contract`, () => {
                     name: `attack`,
                     actor: `test2`,
                     data: {
-                        player: `test2`,
+                        team: `test2`,
                         game_id: gameId,
                         attacks: [4, 5],
                     },
@@ -157,7 +157,7 @@ describe(`contract`, () => {
                     name: `attack`,
                     actor: `test1`,
                     data: {
-                        player: `test1`,
+                        team: `test1`,
                         game_id: gameId,
                         attacks: [20],
                     },
@@ -166,7 +166,7 @@ describe(`contract`, () => {
                     name: `reveal`,
                     actor: `test1`,
                     data: {
-                        player: `test1`,
+                        team: `test1`,
                         game_id: gameId,
                         attack_responses: [5, 2],
                     },
@@ -179,7 +179,7 @@ describe(`contract`, () => {
                     name: `reveal`,
                     actor: `test2`,
                     data: {
-                        player: `test2`,
+                        team: `test2`,
                         game_id: gameId,
                         attack_responses: [4],
                     },
@@ -188,7 +188,7 @@ describe(`contract`, () => {
                     name: `decommit`,
                     actor: `test2`,
                     data: {
-                        player: `test2`,
+                        team: `test2`,
                         game_id: gameId,
                         decommitment: p2Seed,
                     },
@@ -198,7 +198,7 @@ describe(`contract`, () => {
                 name: `decommit`,
                 actor: `test1`,
                 data: {
-                    player: `test1`,
+                    team: `test1`,
                     game_id: gameId,
                     decommitment: p1Seed,
                 },

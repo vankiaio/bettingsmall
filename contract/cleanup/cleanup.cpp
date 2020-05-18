@@ -42,26 +42,32 @@ void bettingsmall::cleanup() {
     if (machine.is_in_end_state()) {
       games.erase(game_itr);
     }
-    // 2. or a player did not respond => move to an end state and allow payouts
+    // 2. or a team did not respond => move to an end state and allow payouts
     else {
-      bool player1_can_claim = false;
-      bool player2_can_claim = false;
-      machine.expire_game(&player1_can_claim, &player2_can_claim);
+      bool team1_can_claim = false;
+      bool team2_can_claim = false;
+      machine.expire_game(&team1_can_claim, &team2_can_claim);
 
-      games.modify(game_itr, game_itr->player1, [&](auto &g) {
+      games.modify(game_itr, game_itr->creator, [&](auto &g) {
         g.expires_at = eosio::current_time_point() + EXPIRE_GAME_OVER;
         g.game_data = machine.data;
-        g.player1_can_claim = player1_can_claim;
-        g.player2_can_claim = player2_can_claim;
+        g.team1_can_claim = team1_can_claim;
+        g.team2_can_claim = team2_can_claim;
       });
 
-      // when a game is expired at most one of the players can get a payout (no
+      // when a game is expired at most one of the teams can get a payout (no
       // draw)
-      if (player1_can_claim) {
-        claim_deferred(_self, game_itr->id, game_itr->player1);
+      if (team1_can_claim) {
+        // claim_deferred(_self, game_itr->id, game_itr->creator);
+        for (auto player_itr = game_itr->team1players.begin(); player_itr != game_itr->team1players.end(); ++player_itr) {
+          claim_deferred(_self, game_itr->id, *player_itr);
+        }
       }
-      if (player2_can_claim) {
-        claim_deferred(_self, game_itr->id, game_itr->player2);
+      if (team2_can_claim) {
+        // claim_deferred(_self, game_itr->id, game_itr->creator);
+        for (auto player_itr = game_itr->team2players.begin(); player_itr != game_itr->team2players.end(); ++player_itr) {
+          claim_deferred(_self, game_itr->id, *player_itr);
+        }
       }
     }
   }

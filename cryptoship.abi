@@ -12,7 +12,7 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "player",
+                    "name": "team",
                     "type": "name"
                 },
                 {
@@ -44,7 +44,7 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "player",
+                    "name": "team",
                     "type": "name"
                 }
             ]
@@ -59,7 +59,7 @@
             "base": "",
             "fields": [
                 {
-                    "name": "player",
+                    "name": "team",
                     "type": "name"
                 },
                 {
@@ -85,7 +85,7 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "player",
+                    "name": "team",
                     "type": "name"
                 },
                 {
@@ -103,31 +103,31 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "player1",
+                    "name": "team1",
                     "type": "name"
                 },
                 {
-                    "name": "player2",
+                    "name": "team2",
                     "type": "name"
                 },
                 {
-                    "name": "player1_nonce",
+                    "name": "team1_nonce",
                     "type": "uint32"
                 },
                 {
-                    "name": "player2_nonce",
+                    "name": "team2_nonce",
                     "type": "uint32"
                 },
                 {
-                    "name": "player1_can_claim",
+                    "name": "team1_can_claim",
                     "type": "bool"
                 },
                 {
-                    "name": "player2_can_claim",
+                    "name": "team2_can_claim",
                     "type": "bool"
                 },
                 {
-                    "name": "bet_amount_per_player",
+                    "name": "bet_amount_per_team",
                     "type": "asset"
                 },
                 {
@@ -163,7 +163,7 @@
             "base": "",
             "fields": [
                 {
-                    "name": "player",
+                    "name": "team",
                     "type": "name"
                 },
                 {
@@ -189,7 +189,7 @@
                     "type": "uint64"
                 },
                 {
-                    "name": "player",
+                    "name": "team",
                     "type": "name"
                 },
                 {

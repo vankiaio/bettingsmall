@@ -8,7 +8,7 @@ async function action() {
             name: `join`,
             actor: CONTRACT_ACCOUNT,
             data: {
-                player: `player`,
+                team: `team`,
                 nonce: 58,
                 game_id: 648,
                 commitment: `commitment`,

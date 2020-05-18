@@ -39,8 +39,8 @@ static const void assert_no_duplicate_ships(const std::vector<uint8_t> &v) {
   }
 }
 
-// a board stores (hidden) board information for a single player,
-// i.e., the opposing player's attacks and our announced results
+// a board stores (hidden) board information for a single team,
+// i.e., the opposing team's attacks and our announced results
 struct board {
   // is used as vector<tile>, but cannot be serialized by EOS
   std::vector<uint8_t> tiles;
@@ -64,7 +64,7 @@ struct board {
     return attacks;
   }
 
-  // calculates max attacks for the player by subtracting destroyed ships'
+  // calculates max attacks for the team by subtracting destroyed ships'
   // attacks
   uint8_t get_attacks_amount() const {
     uint8_t attacks = get_max_attacks_amount();
@@ -124,7 +124,7 @@ struct board {
   }
 
   // this function gets called when the game is over and verifies that the
-  // player 1) provides a valid decommitment such that SHA256(decommitment) =
+  // team 1) provides a valid decommitment such that SHA256(decommitment) =
   // commitment 2) announced the attack responses correctly
   void decommit(const eosio::checksum256 &decommitment) const {
     const auto d_bytes = decommitment.extract_as_byte_array();
