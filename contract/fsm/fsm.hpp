@@ -24,6 +24,7 @@ enum state : uint8_t {
   // game over game states
   CREATED,
   P1_DEPOSITED,
+  P2_DEPOSITED,
   ALL_DEPOSITED,
   // winning states
   P1_WIN,
@@ -163,9 +164,9 @@ class automaton {
   void expire_game(bool *p1_won, uint32_t *multiplier);
   void p1_deposit();
   void p2_deposit();
-  void join(const eosio::checksum256 &commitment);
+  void close(const eosio::checksum256 &commitment);
   void attack(bool is_player1, const std::vector<uint8_t> &attacks);
-  void reveal(bool is_player1, const std::vector<uint8_t> &attack_responses);
+  void reveal(bool is_player1, const state bet_state);
   void decommit(bool is_player1, const eosio::checksum256 &decommitment);
 
   game_data data;

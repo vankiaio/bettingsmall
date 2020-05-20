@@ -9,14 +9,14 @@ using namespace eosio;
 using namespace std;
 
 // create just "opens" the game by allocating and paying for RAM
-void bettingsmall::create(name creator, uint32_t nonce, const asset quantity,
+void bettingsmall::create(name creator, uint32_t nonce,
                         const eosio::checksum256 &commitment) {
   require_auth(creator);
-  // any step between 0.1 and 100 EOS
-  eosio::check(quantity.symbol == EOS_SYMBOL, "only EOS tokens allowed");
-  eosio::check(quantity.amount == 1E3 || quantity.amount == 1E4 ||
-                   quantity.amount == 1E5 || quantity.amount == 1E6,
-               "Must pay any of 0.1 / 1.0 / 10.0 / 100.0 EOS");
+  // any step between 0.1 and 100 VKT
+  // eosio::check(quantity.symbol == VKT_SYMBOL, "only VKT tokens allowed");
+  // eosio::check(quantity.amount == 1E3 || quantity.amount == 1E4 ||
+  //                  quantity.amount == 1E5 || quantity.amount == 1E6,
+  //              "Must pay any of 0.1 / 1.0 / 10.0 / 100.0 VKT");
 
   fsm::automaton machine(commitment);
 
@@ -34,16 +34,17 @@ void bettingsmall::create(name creator, uint32_t nonce, const asset quantity,
   });
 }
 
-void bettingsmall::join(eosio::name player, uint32_t nonce, uint64_t game_id,
+void bettingsmall::close(eosio::name creator, uint32_t nonce, uint64_t game_id,
                       const eosio::checksum256 &commitment) {
-  require_auth(player);
+  require_auth(creator);
 
   auto game_itr = get_game(game_id);
-  eosio::check(game_itr->creator == player,
-               "deposit of another team already exists");
+
+  eosio::check(game_itr != games.end(), "must create a game first");
+  eosio::check(game_itr->creator == creator, "can only end your own game");
 
   fsm::automaton machine(game_itr->game_data);
-  machine.join(commitment);
+  machine.close(commitment);
 
   games.modify(game_itr, game_itr->creator, [&](auto &g) {
     // g.expires_at = eosio::current_time_point() + EXPIRE_TURN;
@@ -71,7 +72,7 @@ void bettingsmall::p1_deposit(name team1player, uint64_t game_id,
     // join new player for one team
     g.team1players.reserve(g.team1players.size()+1);
     player p1;
-    p1.id = g.team1players.size()+1;
+    p1.id = g.team1players.size();
     p1.account = team1player;
     p1.player_can_claim = false;
     p1.bet_amount_per_player = quantity;
@@ -90,25 +91,27 @@ void bettingsmall::p2_deposit(name team2player, uint64_t game_id,
   // only then we can guarantee that the last created game is the opened game
   auto game_itr = get_game(game_id);
 
+print("step----4\n",game_id);
+
   eosio::check(game_itr != games.end(), "must create a game first");
   eosio::check(game_itr->creator != team2player, "cannot join for your own game");
   eosio::check(quantity.amount > 0, "only positive quantity allowed");
-
+print("step----5\n",game_id);
   fsm::automaton machine(game_itr->game_data);
   machine.p2_deposit();
-
+print("step----6\n",game_id);
   games.modify(game_itr, game_itr->creator, [&](game &g) {
-
+print("step----7\n",game_id);
     // join new player for one team
     g.team2players.reserve(g.team2players.size()+1);
     player p2;
-    p2.id = g.team2players.size()+1;
+    p2.id = g.team2players.size();
     p2.account = team2player;
     p2.player_can_claim = false;
     p2.bet_amount_per_player = quantity;
 
     g.team2players.emplace_back(p2);
-
+print("step----8\n",game_id);
     // g.expires_at = eosio::current_time_point() + EXPIRE_OPEN;
     g.game_data = machine.data;
   });
@@ -116,20 +119,29 @@ void bettingsmall::p2_deposit(name team2player, uint64_t game_id,
 
 void bettingsmall::transfer(name from, name to, const asset &quantity,
                           string memo) {
+                            print("step----1");
   if (from == _self) {
     // we're sending money, do nothing additional
     return;
   }
 
+  auto latest_game = games.end();
+  latest_game--;
+
+  print("step----2");
+
+  eosio::check(latest_game != games.end(), "must create a game first");
   eosio::check(to == _self, "contract is not involved in this transfer");
   eosio::check(quantity.symbol.is_valid(), "invalid quantity");
   eosio::check(quantity.amount > 0, "only positive quantity allowed");
-  eosio::check(quantity.symbol == EOS_SYMBOL, "only EOS tokens allowed");
+  eosio::check(quantity.symbol == VKT_SYMBOL, "only VKT tokens allowed");
 
-  uint64_t game_id = std::stoull(memo);
-  if (to == "bettingteam1"_n) {
+  print("step----3");
+
+  uint64_t game_id = latest_game->id;
+  if (memo == "bettingteam1") {
     p1_deposit(from, game_id, quantity);
-  } if (to == "bettingteam2"_n) {
+  } else {
     p2_deposit(from, game_id, quantity);
   }
 }
@@ -149,17 +161,40 @@ void bettingsmall::attack(uint64_t game_id, eosio::name player,
   });
 }
 
-void bettingsmall::reveal(uint64_t game_id, eosio::name team,
-                        const std::vector<uint8_t> &attack_responses) {
-  require_auth(team);
+void bettingsmall::reveal(uint64_t game_id, eosio::name creator) {
+  require_auth(creator);
   auto game_itr = get_game(game_id);
-  assert_player_in_game(*game_itr, team);
+
+  eosio::check(game_itr->creator == creator, "can only end your own game");
+
+  float bet_amount_t1 = 0.0;
+  float bet_amount_t2 = 0.0;
+  fsm::state bet_state = DRAW;
+
+  //calculate who is the winner or DRAW
+  for (auto player_itr = game_itr->team1players.begin(); player_itr != game_itr->team1players.end(); ++player_itr) {
+    bet_amount_t1 += player_itr->bet_amount_per_player.amount;
+  }
+  for (auto player_itr = game_itr->team2players.begin(); player_itr != game_itr->team2players.end(); ++player_itr) {
+    bet_amount_t2 += player_itr->bet_amount_per_player.amount;
+  }
+
+  // the team1 win
+  if(bet_amount_t1 < bet_amount_t2)
+  {
+    bet_state = P1_WIN;
+  }else if(bet_amount_t1 > bet_amount_t2)
+  {
+    bet_state = P2_WIN;
+  }
+  
+  
 
   fsm::automaton machine(game_itr->game_data);
-  machine.reveal(team == game_itr->creator, attack_responses);
+  machine.reveal(creator == game_itr->creator, bet_state);
 
   games.modify(game_itr, game_itr->creator, [&](auto &g) {
-    g.expires_at = eosio::current_time_point() + EXPIRE_TURN;
+    g.expires_at = eosio::current_time_point() + EXPIRE_GAME_OVER;
     g.game_data = machine.data;
   });
 }
@@ -168,11 +203,10 @@ void bettingsmall::decommit(uint64_t game_id, eosio::name player,
                           const eosio::checksum256 &decommitment) {
   require_auth(player);
   auto game_itr = get_game(game_id);
-  assert_player_in_game(*game_itr, player);
+  //assert_player_in_game(*game_itr, player);
 
   bool is_creator = player == game_itr->creator;
   fsm::automaton machine(game_itr->game_data);
-  machine.decommit(is_creator, decommitment);
 
   games.modify(game_itr, game_itr->creator, [&](auto &g) {
     // team1 decommits means that the game is over and a winner was determined
@@ -185,23 +219,25 @@ void bettingsmall::decommit(uint64_t game_id, eosio::name player,
   if (is_creator) {
     switch (machine.get_winner()) {
       case P1_WIN: {
+        machine.decommit(is_creator, decommitment);
         for (auto player_itr = game_itr->team1players.begin(); player_itr != game_itr->team1players.end(); ++player_itr) {
           action(permission_level{_self, "active"_n}, "eosio.token"_n,
                 "transfer"_n,
-                make_tuple(_self, game_itr->creator,
+                make_tuple(_self, player_itr->account,
                             player_itr->bet_amount_per_player * 2,
-                            std::to_string(game_itr->id)))
+                            "BettingSmall Winner refund back ID:" +std::to_string(game_itr->id)))
               .send();
         }
         break;
       }
       case P2_WIN: {
+        machine.decommit(is_creator, decommitment);
         for (auto player_itr = game_itr->team2players.begin(); player_itr != game_itr->team2players.end(); ++player_itr) {
           action(permission_level{_self, "active"_n}, "eosio.token"_n,
                 "transfer"_n,
-                make_tuple(_self, game_itr->creator,
+                make_tuple(_self, player_itr->account,
                             player_itr->bet_amount_per_player * 2,
-                            std::to_string(game_itr->id)))
+                            "BettingSmall Winner refund back ID:" +std::to_string(game_itr->id)))
               .send();
         }
       }

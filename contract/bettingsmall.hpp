@@ -9,7 +9,7 @@
 
 #include "fsm/fsm.hpp"
 
-#define EOS_SYMBOL symbol("EOS", 4)
+#define VKT_SYMBOL symbol("VKT", 4)
 
 // #define PRODUCTION
 
@@ -28,6 +28,8 @@ CONTRACT bettingsmall : public eosio::contract {
     eosio::name account;
     bool player_can_claim;
     eosio::asset bet_amount_per_player;
+
+    auto primary_key() const { return id; }
 
     EOSLIB_SERIALIZE(player, (id)(account)(player_can_claim)
                             (bet_amount_per_player))
@@ -68,7 +70,7 @@ CONTRACT bettingsmall : public eosio::contract {
     // auto by_team2players() const { return team2players; }
     uint64_t by_game_state() const { return game_data.state; }
 
-    EOSLIB_SERIALIZE(game, (id)(team1players)(team2players)
+    EOSLIB_SERIALIZE(game, (id)(creator)(creator_nonce)(team1players)(team2players)
                                (team1_can_claim)(team2_can_claim)
                                (expires_at)(game_data))
   };
@@ -131,20 +133,25 @@ CONTRACT bettingsmall : public eosio::contract {
 #endif
   // implemented in cleanup.cpp
   ACTION cleanup();
-  ACTION create(eosio::name creator, uint32_t nonce, const eosio::asset quantity,
-                const eosio::checksum256 &commitment);
-  ACTION join(eosio::name teamplayer, uint32_t nonce, uint64_t game_id,
+  ACTION create(eosio::name creator, uint32_t nonce, const eosio::checksum256 &commitment);
+  ACTION close(eosio::name creator, uint32_t nonce, uint64_t game_id,
               const eosio::checksum256 &commitment);
-  ACTION attack(uint64_t game_id, eosio::name team,
+  void attack(uint64_t game_id, eosio::name team,
                 const std::vector<uint8_t> &attacks);
-  ACTION reveal(uint64_t game_id, eosio::name team,
-                const std::vector<uint8_t> &attack_responses);
+  ACTION reveal(uint64_t game_id, eosio::name team);
   ACTION decommit(uint64_t game_id, eosio::name team,
                   const eosio::checksum256 &decommitment);
   ACTION claim(uint64_t game_id, const player &player);
 
-  [[eosio::on_notify("eosio.token::transfer")]] void transfer(eosio::name from, eosio::name to, const eosio::asset &quantity,
+  [[eosio::on_notify("eosio.token::transfer")]] 
+  void transfer(eosio::name from, eosio::name to, const eosio::asset &quantity,
                 std::string memo);
+  // [[eosio::on_notify("*::transfer")]] 
+  // ACTION transfer(eosio::name from, eosio::name to, const eosio::asset &quantity, std::string memo);
+
+  // [[eosio::on_notify("eosio.token::transfer")]]
+  // void dummytansfer(eosio::name from, eosio::name to, eosio::asset quantity, std::string memo){transfer(from,to,quantity,memo);} 
+
   void p1_deposit(eosio::name team1player, uint64_t game_id,
                   const eosio::asset &quantity);
   void p2_deposit(eosio::name team2player, uint64_t game_id,
