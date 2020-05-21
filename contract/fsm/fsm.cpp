@@ -97,7 +97,7 @@ void automaton::decommit(bool is_team1,
   //   data.state = P2_VERIFIED;
   //   data.board2.decommit(decommitment);
   // }
-  data.state = (data.state != P1_WIN  && data.state != P2_WIN)
+  data.state = (data.state != P1_WIN && data.state != P2_WIN)
                   ? NEVER_STARTED
                   : (data.state == P1_WIN  ? P1_WIN_EXPIRED : P2_WIN_EXPIRED);
 }

@@ -208,18 +208,10 @@ void bettingsmall::decommit(uint64_t game_id, eosio::name player,
   bool is_creator = player == game_itr->creator;
   fsm::automaton machine(game_itr->game_data);
 
-  games.modify(game_itr, game_itr->creator, [&](auto &g) {
-    // team1 decommits means that the game is over and a winner was determined
-    g.expires_at =
-        eosio::current_time_point() + (is_creator ? EXPIRE_GAME_OVER : EXPIRE_TURN);
-    g.game_data = machine.data;
-  });
-
   // team1 decommits means that the game is over and a winner was determined
   if (is_creator) {
     switch (machine.get_winner()) {
       case P1_WIN: {
-        machine.decommit(is_creator, decommitment);
         for (auto player_itr = game_itr->team1players.begin(); player_itr != game_itr->team1players.end(); ++player_itr) {
           action(permission_level{_self, "active"_n}, "eosio.token"_n,
                 "transfer"_n,
@@ -231,7 +223,6 @@ void bettingsmall::decommit(uint64_t game_id, eosio::name player,
         break;
       }
       case P2_WIN: {
-        machine.decommit(is_creator, decommitment);
         for (auto player_itr = game_itr->team2players.begin(); player_itr != game_itr->team2players.end(); ++player_itr) {
           action(permission_level{_self, "active"_n}, "eosio.token"_n,
                 "transfer"_n,
@@ -261,6 +252,14 @@ void bettingsmall::decommit(uint64_t game_id, eosio::name player,
         eosio::check(false, "FSM is in a broken state");
       }
     }
+
+    machine.decommit(is_creator, decommitment);
+    games.modify(game_itr, game_itr->creator, [&](auto &g) {
+    // team1 decommits means that the game is over and a winner was determined
+    g.expires_at =
+        eosio::current_time_point() + (is_creator ? EXPIRE_GAME_OVER : EXPIRE_TURN);
+    g.game_data = machine.data;
+  });
   }
 }
 
