@@ -39,13 +39,10 @@ CONTRACT bettingsmall : public eosio::contract {
     // game meta information
     uint64_t id;
     eosio::name creator;
-    // eosio::name team1;
-    // eosio::name team2;
     // needed for hashing from the frontend when hiding ships
     // (pk id is not a nonce, it can repeat when erasing games)
     uint32_t creator_nonce;
-    // uint32_t team1_nonce;
-    // uint32_t team2_nonce;
+
     // team 1 players
     // typedef eosio::multi_index< "team1players"_n, player > team1players_t;
     // team1players_t team1players;
@@ -66,8 +63,6 @@ CONTRACT bettingsmall : public eosio::contract {
 
     auto primary_key() const { return id; }
     uint64_t by_expires_at() const { return expires_at.sec_since_epoch(); }
-    // auto by_team1players() const { return team1players; }
-    // auto by_team2players() const { return team2players; }
     uint64_t by_game_state() const { return game_data.state; }
 
     EOSLIB_SERIALIZE(game, (id)(creator)(creator_nonce)(team1players)(team2players)
@@ -77,10 +72,6 @@ CONTRACT bettingsmall : public eosio::contract {
 
   typedef eosio::multi_index<
       "games"_n, game,
-      // eosio::indexed_by<
-      //     "team1players"_n, eosio::const_mem_fun<game, team1players_t, &game::by_team1players>>,
-      // eosio::indexed_by<
-      //     "team2players"_n, eosio::const_mem_fun<game, team2players_t, &game::by_team2players>>,
       eosio::indexed_by<
           "expiresat"_n,
           eosio::const_mem_fun<game, uint64_t, &game::by_expires_at>>,
@@ -97,26 +88,14 @@ CONTRACT bettingsmall : public eosio::contract {
   void assert_player_in_game(const game &game, eosio::name player) {
     bool is_part_of_team1 = false;
     bool is_part_of_team2 = false;
-    // eosio::check( game.team1players.size() > 0, "there is no player in the team 1 of this game" );
-    // eosio::check( game.team2players.size() > 0, "there is no player in the team 2 of this game" );
-    // for( size_t i = 0; i < game.team1players.size(); i++ ) {
-    //   if(game.team1players[i].account == player){
-    //     is_part_of_team1 = true;
-    //     break;
-    //   }
-    // }
+
     for (auto player_itr = game.team1players.begin(); player_itr != game.team1players.end(); ++player_itr) {
       if(player_itr->account == player){
         is_part_of_team1 = true;
         break;
       }
     }
-    // for( size_t i = 0; i < game.team2players.size(); i++ ) {
-    //   if(game.team2players[i].account == player){
-    //     is_part_of_team2 = true;
-    //     break;
-    //   }
-    // }
+
     for (auto player_itr = game.team2players.begin(); player_itr != game.team2players.end(); ++player_itr) {
       if(player_itr->account == player){
         is_part_of_team2 = true;

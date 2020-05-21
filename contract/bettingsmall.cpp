@@ -12,11 +12,6 @@ using namespace std;
 void bettingsmall::create(name creator, uint32_t nonce,
                         const eosio::checksum256 &commitment) {
   require_auth(creator);
-  // any step between 0.1 and 100 VKT
-  // eosio::check(quantity.symbol == VKT_SYMBOL, "only VKT tokens allowed");
-  // eosio::check(quantity.amount == 1E3 || quantity.amount == 1E4 ||
-  //                  quantity.amount == 1E5 || quantity.amount == 1E6,
-  //              "Must pay any of 0.1 / 1.0 / 10.0 / 100.0 VKT");
 
   fsm::automaton machine(commitment);
 
