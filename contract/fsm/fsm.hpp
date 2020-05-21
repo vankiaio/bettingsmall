@@ -89,39 +89,29 @@ class automaton {
 
   void expire_game(bool *p1_can_claim, bool *p2_can_claim) {
     switch (data.state) {
-      // no money was deposited
-      case CREATED: {
+      // draw scene
+      case DRAW: {
         data.state = NEVER_STARTED;
         *p1_can_claim = false;
         *p2_can_claim = false;
         break;
       }
 
-      // only P1 deposited and no P2 joined, full return
-      case P1_DEPOSITED: {
-        data.state = NEVER_STARTED;
-        *p1_can_claim = true;
-        *p2_can_claim = false;
-        break;
-      }
-
-      // all states where it's P2's turn
-      case ALL_DEPOSITED:
-      case REVEALED_PERIOD: {
+      // only P1 win
+      case P1_WIN: {
         data.state = P1_WIN_EXPIRED;
-        *p1_can_claim = true;
+        *p1_can_claim = false;
         *p2_can_claim = false;
         break;
       }
 
-      // // all states where it's P1's turn
-      // case ALL_DEPOSITED:
-      // case REVEALED_PERIOD : {
-      //   data.state = P2_WIN_EXPIRED;
-      //   *p1_can_claim = false;
-      //   *p2_can_claim = true;
-      //   break;
-      // }
+      // only P2 win
+      case P2_WIN: {
+        data.state = P2_WIN_EXPIRED;
+        *p1_can_claim = false;
+        *p2_can_claim = false;
+        break;
+      }
 
       // all other states are already end states
       default: {
