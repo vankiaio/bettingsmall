@@ -136,8 +136,6 @@ CONTRACT bettingsmall : public eosio::contract {
   ACTION create(eosio::name creator, uint32_t nonce, const eosio::checksum256 &commitment);
   ACTION close(eosio::name creator, uint32_t nonce, uint64_t game_id,
               const eosio::checksum256 &commitment);
-  void attack(uint64_t game_id, eosio::name team,
-                const std::vector<uint8_t> &attacks);
   ACTION reveal(uint64_t game_id, eosio::name team);
   ACTION decommit(uint64_t game_id, eosio::name team,
                   const eosio::checksum256 &decommitment);
@@ -146,11 +144,6 @@ CONTRACT bettingsmall : public eosio::contract {
   [[eosio::on_notify("eosio.token::transfer")]] 
   void transfer(eosio::name from, eosio::name to, const eosio::asset &quantity,
                 std::string memo);
-  // [[eosio::on_notify("*::transfer")]] 
-  // ACTION transfer(eosio::name from, eosio::name to, const eosio::asset &quantity, std::string memo);
-
-  // [[eosio::on_notify("eosio.token::transfer")]]
-  // void dummytansfer(eosio::name from, eosio::name to, eosio::asset quantity, std::string memo){transfer(from,to,quantity,memo);} 
 
   void p1_deposit(eosio::name team1player, uint64_t game_id,
                   const eosio::asset &quantity);

@@ -12,11 +12,6 @@ namespace fsm {
 // finite state machine states
 enum state : uint8_t {
   // running game states
-  // P1_REVEALED,
-  // P1_ATTACKED,
-  // P2_REVEALED,
-  // P2_ATTACKED,
-  // P2_VERIFIED,
   WHITE_BOX_PERIOD,
   BLACK_BOX_PERIOD,
   REVEALED_PERIOD,
@@ -155,7 +150,6 @@ class automaton {
   void p1_deposit();
   void p2_deposit();
   void close(const eosio::checksum256 &commitment);
-  void attack(bool is_player1, const std::vector<uint8_t> &attacks);
   void reveal(bool is_player1, const state bet_state);
   void decommit(bool is_player1, const eosio::checksum256 &decommitment);
 

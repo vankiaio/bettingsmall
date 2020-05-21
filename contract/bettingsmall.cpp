@@ -146,21 +146,6 @@ void bettingsmall::transfer(name from, name to, const asset &quantity,
   }
 }
 
-void bettingsmall::attack(uint64_t game_id, eosio::name player,
-                        const std::vector<uint8_t> &attacks) {
-  require_auth(player);
-  auto game_itr = get_game(game_id);
-  assert_player_in_game(*game_itr, player);
-
-  fsm::automaton machine(game_itr->game_data);
-  machine.attack(player == game_itr->creator, attacks);
-
-  games.modify(game_itr, game_itr->creator, [&](auto &g) {
-    g.expires_at = eosio::current_time_point() + EXPIRE_TURN;
-    g.game_data = machine.data;
-  });
-}
-
 void bettingsmall::reveal(uint64_t game_id, eosio::name creator) {
   require_auth(creator);
   auto game_itr = get_game(game_id);
